@@ -1,0 +1,42 @@
+# Build outputs
+slime_prefilter
+slime_prefilter_cuda
+slime_prefilter_cuda.exe
+slime_prefilter_cuda.lib
+slime_prefilter_cuda.exp
+slime_window_filter
+slime_window_filter_cuda
+slime_window_filter_cuda.exe
+slime_window_filter_cuda.lib
+slime_window_filter_cuda.exp
+ocean_monument_filter
+ocean_monument_quad_cuda
+ocean_monument_quad_cuda.exe
+ocean_monument_quad_cuda.lib
+ocean_monument_quad_cuda.exp
+all_biomes_filter
+all_biomes_cuda
+all_biomes_cuda.exe
+all_biomes_cuda.lib
+all_biomes_cuda.exp
+fortress_crossroads_filter
+*.o
+*.a
+
+# Runtime outputs
+runs/
+dist/
+tools/
+*.log
+*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/

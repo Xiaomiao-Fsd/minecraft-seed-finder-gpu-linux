@@ -1,0 +1,72 @@
+{
+  "edition": "java",
+  "target_version": "26.2",
+  "biome_reference": "26.2",
+  "tools": {
+    "cubiomes_dir": null,
+    "note": "CPU cubiomes 路径只保留给手动复核。默认 pipeline 是 GPU-only，不依赖 cubiomes。"
+  },
+  "backend": "cuda",
+  "seed_range": {
+    "start": 0,
+    "count": 1000000
+  },
+  "output": {
+    "directory": "runs/default",
+    "candidates_csv": "candidates_quad_monuments.csv",
+    "slime_windows_csv": "candidates_quad_monuments_slime_windows.csv",
+    "results_csv": "results_all_biomes.csv",
+    "checkpoint_file": "checkpoint.json"
+  },
+  "prefilter": {
+    "enabled": true,
+    "type": "quad_ocean_monument",
+    "required_monuments": 4,
+    "search_radius_blocks": 60000,
+    "cluster_window_chunks": 17,
+    "window_must_fit_inside_radius": true,
+    "monument_footprint_blocks": 58,
+    "monument_center_offset_blocks": 8,
+    "check_biome_viability": true,
+    "mc": "26.2",
+    "max_candidates": 0,
+    "cuda": {
+      "batch_size": 1048576,
+      "threads": 256
+    },
+    "note": "第一阶段使用 CUDA 搜索原点正负 60000 格内的四联海底神殿；四个神殿的完整 footprint 必须能被一个 chunk 对齐的 17x17 区块正方形完整包含，并默认使用 Mojang 官方 26.2 正式版数据生成器报告导出的 biome 参数做海洋群系可生成性检查。"
+  },
+  "postfilters": {
+    "slime_window_density": {
+      "enabled": true,
+      "search_radius_blocks": 60000,
+      "window_chunks": 17,
+      "min_slime_chunks": 0,
+      "cuda": {
+        "threads": 256,
+        "blocks": 0
+      },
+      "note": "第二阶段对四联神殿候选 seed 精确扫描正负 60000 格内所有完整 17x17 区块窗口，输出最大史莱姆区块数量。min_slime_chunks=0 表示只排序/记录，不丢弃候选。"
+    },
+    "all_biomes_within_origin_radius": {
+      "enabled": true,
+      "radius_blocks": 10000,
+      "scale": 64,
+      "mc": "26.2",
+      "gpu_status": "implemented_26_2_biome_noise",
+      "cuda": {
+        "threads": 256,
+        "batch_size": 512
+      },
+      "note": "第三阶段使用 CUDA 按 Mojang 官方 26.2 正式版数据生成器报告导出的 biome 参数，在正负 10000 格内按 scale=64 扫描全部 55 个主世界生物群系。CPU cubiomes 只保留给显式 --backend cpu 复核。"
+    }
+  },
+  "pipeline": {
+    "order": [
+      "quad_ocean_monument",
+      "slime_window_density",
+      "all_biomes_within_origin_radius"
+    ],
+    "notes": "默认 GPU-only 顺序：先用 CUDA 搜四联海底神殿结构位置候选，再用 CUDA 计算标准 17x17 空置域大小窗口内最大史莱姆区块数，最后用 CUDA 做正负 10000 格全生物群系筛选。"
+  }
+}
