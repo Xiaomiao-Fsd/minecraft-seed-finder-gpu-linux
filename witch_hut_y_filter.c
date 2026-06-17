@@ -56,6 +56,17 @@ static long long parse_ll(const char *s, const char *name) {
     return v;
 }
 
+static double parse_double(const char *s, const char *name) {
+    errno = 0;
+    char *end = NULL;
+    double v = strtod(s, &end);
+    if (errno || !end || *end) {
+        fprintf(stderr, "Invalid %s: %s\n", name, s);
+        exit(2);
+    }
+    return v;
+}
+
 static int parse_seed_line(const char *line, long long *seed) {
     const char *p = line;
     while (*p && isspace((unsigned char)*p)) p++;
@@ -118,7 +129,9 @@ static void usage(const char *argv0) {
         "  --circle            use Euclidean radius instead of square bounds\n"
         "  --mc VERSION        26.2|newest|1_21|1_20|1_19|1_18 (default 26.2)\n"
         "  --no-biome-check    include structure attempts without Swamp biome viability\n"
-        "  --include-missing   output seeds with no hut found, sorted after hits\n"
+        "  --negative-y-only   only keep huts with hut_y_approx < 0\n"
+        "  --max-y N           only keep huts with hut_y_approx <= N\n"
+        "  --include-missing   output seeds with no hut matching filters, sorted after hits\n"
         "  --limit N           process at most N input seed rows, 0 = all (default 0)\n"
         "  --top N             write at most N found rows after sorting, 0 = all (default 0)\n"
         "  --progress N        print progress every N seeds, 0 = silent (default 100)\n"
@@ -128,7 +141,16 @@ static void usage(const char *argv0) {
         argv0);
 }
 
-static Result scan_seed(long long signed_seed, int mc, int radius, int circle, int require_biome) {
+static Result scan_seed(
+    long long signed_seed,
+    int mc,
+    int radius,
+    int circle,
+    int require_biome,
+    int negative_y_only,
+    int max_y_enabled,
+    float max_y
+) {
     Result best;
     memset(&best, 0, sizeof(best));
     best.seed = signed_seed;
@@ -170,6 +192,8 @@ static Result scan_seed(long long signed_seed, int mc, int radius, int circle, i
             float y = 0.0f;
             int biome_id = -1;
             if (mapApproxHeight(&y, &biome_id, &g, &sn, sample_x >> 2, sample_z >> 2, 1, 1) != 0) continue;
+            if (negative_y_only && !(y < 0.0f)) continue;
+            if (max_y_enabled && y > max_y) continue;
 
             if (!best.found || y < best.y || (y == best.y && (p.x < best.x || (p.x == best.x && p.z < best.z)))) {
                 best.found = 1;
@@ -197,6 +221,9 @@ int main(int argc, char **argv) {
     int radius = 60000;
     int circle = 0;
     int require_biome = 1;
+    int negative_y_only = 0;
+    int max_y_enabled = 0;
+    float max_y = 0.0f;
     int include_missing = 0;
     long limit = 0;
     long top = 0;
@@ -210,8 +237,10 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--limit") && i + 1 < argc) limit = (long)parse_ll(argv[++i], "limit");
         else if (!strcmp(argv[i], "--top") && i + 1 < argc) top = (long)parse_ll(argv[++i], "top");
         else if (!strcmp(argv[i], "--progress") && i + 1 < argc) progress = (long)parse_ll(argv[++i], "progress");
+        else if (!strcmp(argv[i], "--max-y") && i + 1 < argc) { max_y = (float)parse_double(argv[++i], "max-y"); max_y_enabled = 1; }
         else if (!strcmp(argv[i], "--circle")) circle = 1;
         else if (!strcmp(argv[i], "--no-biome-check")) require_biome = 0;
+        else if (!strcmp(argv[i], "--negative-y-only")) negative_y_only = 1;
         else if (!strcmp(argv[i], "--include-missing")) include_missing = 1;
         else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { usage(argv[0]); return 0; }
         else { usage(argv[0]); return 2; }
@@ -232,7 +261,7 @@ int main(int argc, char **argv) {
         long long seed = 0;
         if (!parse_seed_line(line, &seed)) { skipped++; continue; }
         if (limit > 0 && processed >= limit) break;
-        Result r = scan_seed(seed, mc, radius, circle, require_biome);
+        Result r = scan_seed(seed, mc, radius, circle, require_biome, negative_y_only, max_y_enabled, max_y);
         if (r.found) { hits++; push_result(&results, r); }
         else if (include_missing) { push_result(&results, r); }
         processed++;
@@ -254,13 +283,17 @@ int main(int argc, char **argv) {
         "checked_structure_positions,viable_huts_in_radius,"
         "radius_blocks,mc_approx,method,note\n");
 
+    const char *missing_note = negative_y_only
+        ? "no negative-Y hut found in radius"
+        : (max_y_enabled ? "no hut at or below max-y found in radius" : "no hut found in radius");
+
     long written = 0;
     for (size_t i = 0; i < results.n; i++) {
         const Result *r = &results.v[i];
         if (top > 0 && r->found && written >= top) break;
         if (!r->found) {
-            fprintf(out, "%lld,,,,,,,,,,,,%ld,%ld,%d,%s,missing,no hut found in radius\n",
-                    r->seed, r->checked, r->viable, radius, mc_name);
+            fprintf(out, "%lld,,,,,,,,,,,,%ld,%ld,%d,%s,missing,%s\n",
+                    r->seed, r->checked, r->viable, radius, mc_name, missing_note);
             continue;
         }
         fprintf(out,
