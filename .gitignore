@@ -9,6 +9,10 @@ slime_window_filter_cuda
 slime_window_filter_cuda.exe
 slime_window_filter_cuda.lib
 slime_window_filter_cuda.exp
+witch_hut_y_filter
+witch_hut_y_filter.exe
+witch_hut_y_filter.lib
+witch_hut_y_filter.exp
 ocean_monument_filter
 ocean_monument_quad_cuda
 ocean_monument_quad_cuda.exe

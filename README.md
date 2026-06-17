@@ -87,6 +87,19 @@ python3 seed_finder.py slime-window --candidates runs/default/candidates_quad_mo
 python3 seed_finder.py all-biomes --candidates runs/default/candidates_quad_monuments_slime_windows.csv --backend cuda
 ```
 
+对筛选后的候选搜索近似 Y 最低的女巫小屋：
+
+```bash
+# 如果 cubiomes 不在默认相对路径，先设置 CUBIOMES_DIR=/path/to/cubiomes
+scripts/find_lowest_witch_huts.sh \
+  --in runs/default/results_all_biomes.csv \
+  --out runs/default/witch_huts_lowest.csv \
+  --radius-blocks 60000 \
+  --top 50
+```
+
+这个后处理会读取输入 CSV 第一列 seed，输出每个 seed 在搜索半径内近似 Y 最低的女巫小屋，并整体按 `hut_y_approx` 从低到高排序。女巫小屋 X/Z 来自 cubiomes 结构公式；Y 使用 cubiomes `mapApproxHeight()` 在小屋 chunk 中心估算，适合快速排序/定位，最终精确方块级高度建议进游戏或 Chunkbase 复核。
+
 CPU/cubiomes 复核必须显式指定：
 
 ```bash

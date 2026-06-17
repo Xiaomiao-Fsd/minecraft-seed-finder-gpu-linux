@@ -29,6 +29,7 @@ copy_file slime_prefilter.c slime_prefilter.c
 copy_file slime_prefilter_cuda.cu slime_prefilter_cuda.cu
 copy_file slime_window_filter.c slime_window_filter.c
 copy_file slime_window_filter_cuda.cu slime_window_filter_cuda.cu
+copy_file witch_hut_y_filter.c witch_hut_y_filter.c
 copy_file ocean_monument_filter.c ocean_monument_filter.c
 copy_file ocean_monument_quad_cuda.cu ocean_monument_quad_cuda.cu
 copy_file all_biomes_filter.c all_biomes_filter.c
@@ -39,12 +40,14 @@ copy_file fortress_crossroads_filter.c fortress_crossroads_filter.c
 copy_file THIRD_PARTY_NOTICES.md THIRD_PARTY_NOTICES.md
 copy_file .gitignore .gitignore
 copy_file scripts/install_ubuntu22_deps.sh scripts/install_ubuntu22_deps.sh
+copy_file scripts/find_lowest_witch_huts.sh scripts/find_lowest_witch_huts.sh
 copy_file scripts/package_release.sh scripts/package_release.sh
 
 chmod +x \
   "$TMP/$NAME/run_seed_cluster.sh" \
   "$TMP/$NAME/seed_cluster_runner.py" \
   "$TMP/$NAME/scripts/install_ubuntu22_deps.sh" \
+  "$TMP/$NAME/scripts/find_lowest_witch_huts.sh" \
   "$TMP/$NAME/scripts/package_release.sh"
 
 tar -C "$TMP" -czf "$DIST/$NAME.tar.gz" "$NAME"
