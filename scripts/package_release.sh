@@ -30,6 +30,7 @@ copy_file slime_prefilter_cuda.cu slime_prefilter_cuda.cu
 copy_file slime_window_filter.c slime_window_filter.c
 copy_file slime_window_filter_cuda.cu slime_window_filter_cuda.cu
 copy_file witch_hut_y_filter.c witch_hut_y_filter.c
+copy_file witch_hut_y_filter_cuda.cu witch_hut_y_filter_cuda.cu
 copy_file ocean_monument_filter.c ocean_monument_filter.c
 copy_file ocean_monument_quad_cuda.cu ocean_monument_quad_cuda.cu
 copy_file all_biomes_filter.c all_biomes_filter.c

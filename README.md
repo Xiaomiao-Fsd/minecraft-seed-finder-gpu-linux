@@ -92,6 +92,7 @@ python3 seed_finder.py all-biomes --candidates runs/default/candidates_quad_monu
 ```bash
 # 如果 cubiomes 不在默认相对路径，先设置 CUBIOMES_DIR=/path/to/cubiomes
 scripts/find_lowest_witch_huts.sh \
+  --backend cuda \
   --in runs/default/results_all_biomes.csv \
   --out runs/default/witch_huts_negative_y.csv \
   --whole-world \
@@ -103,13 +104,14 @@ scripts/find_lowest_witch_huts.sh \
 
 ```bash
 scripts/find_lowest_witch_huts.sh \
+  --backend cuda \
   --in runs/default/results_all_biomes.csv \
   --out runs/default/witch_huts_y40_or_lower.csv \
   --whole-world \
   --max-y 40
 ```
 
-这个后处理会读取输入 CSV 第一列 seed，输出每个 seed 在搜索范围内近似 Y 最低的女巫小屋，并整体按 `hut_y_approx` 从低到高排序。加 `--whole-world` 时按 Minecraft 世界边界完整方形区域 `±29999984` 搜索；不加时可用 `--radius-blocks N` 指定原点半径。加 `--negative-y-only` 时只保留 `hut_y_approx < 0` 的小屋；加 `--max-y N` 时只保留 `hut_y_approx <= N` 的小屋。女巫小屋 X/Z 来自 cubiomes 结构公式；Y 使用 cubiomes `mapApproxHeight()` 在小屋 chunk 中心估算，适合快速排序/定位，最终精确方块级高度建议进游戏或 Chunkbase 复核。
+这个后处理会读取输入 CSV 第一列 seed，输出每个 seed 在搜索范围内近似 Y 最低的女巫小屋，并整体按 `hut_y_approx` 从低到高排序。默认走 CUDA 后端；加 `--backend cpu` 才回退到 cubiomes CPU 版。加 `--whole-world` 时按 Minecraft 世界边界完整方形区域 `±29999984` 搜索；不加时可用 `--radius-blocks N` 指定原点半径。加 `--negative-y-only` 时只保留 `hut_y_approx < 0` 的小屋；加 `--max-y N` 时只保留 `hut_y_approx <= N` 的小屋。女巫小屋 X/Z 来自结构公式；Y 在 CUDA 版里用 26.2 biome noise 的 depth 参数近似，适合快速排序/定位，最终精确方块级高度建议进游戏或 Chunkbase 复核。
 
 注意：`--whole-world` 是精确覆盖世界边界，但每个 seed 约需扫描 `117190 x 117190 ≈ 1.37e10` 个 Swamp Hut region，会非常慢，建议只在候选 seed 数量很少、可以长期后台运行时使用。
 
@@ -130,6 +132,7 @@ python3 seed_finder.py all-biomes --candidates runs/default/candidates_quad_monu
 - `postfilters.slime_window_density.min_slime_chunks`: 史莱姆窗口阈值，默认 0 表示只记录不丢弃。
 - `postfilters.all_biomes_within_origin_radius.radius_blocks`: 全生物群系半径，默认 10000。
 - `postfilters.all_biomes_within_origin_radius.scale`: biome 扫描尺度，默认 64。
+- `scripts/find_lowest_witch_huts.sh` 默认使用 CUDA 后端；`--backend cpu` 仅用于 cubiomes 复核。
 
 ## 当前限制
 
