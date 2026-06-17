@@ -4,8 +4,9 @@
 # Example:
 #   scripts/find_lowest_witch_huts.sh \
 #     --in runs/default/results_all_biomes.csv \
-#     --out runs/default/witch_huts_lowest.csv \
-#     --radius-blocks 60000 \
+#     --out runs/default/witch_huts_negative_y.csv \
+#     --whole-world \
+#     --negative-y-only \
 #     --top 50
 #
 # Set CUBIOMES_DIR if cubiomes is not at ../../tools/cubiomes.

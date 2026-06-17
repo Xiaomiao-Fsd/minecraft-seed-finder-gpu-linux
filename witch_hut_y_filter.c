@@ -1,8 +1,9 @@
 // Find the lowest-Y Witch Hut (Swamp Hut) candidate for each input Minecraft Java seed.
 //
 // Reads a CSV whose first column is a seed, scans viable Swamp Hut structure
-// positions inside an origin-centered radius, keeps the lowest approximate
-// surface Y per seed, then writes results sorted by Y ascending.
+// positions inside an origin-centered radius or the full Minecraft world border,
+// keeps the lowest approximate surface Y per seed, then writes results sorted by
+// Y ascending.
 //
 // Y caveat: cubiomes gives structure X/Z exactly, but Overworld terrain height
 // here uses cubiomes mapApproxHeight() at the hut chunk center. Treat Y as a
@@ -20,6 +21,9 @@
 
 #include "finders.h"
 #include "generator.h"
+
+#define DEFAULT_RADIUS_BLOCKS 60000
+#define MINECRAFT_WORLD_BORDER_BLOCKS 29999984
 
 typedef struct {
     long long seed;
@@ -126,6 +130,7 @@ static void usage(const char *argv0) {
         "\n"
         "Options:\n"
         "  --radius-blocks N   search square +/-N blocks from origin (default 60000)\n"
+        "  --whole-world       search the full Minecraft world-border square, +/-29999984 blocks\n"
         "  --circle            use Euclidean radius instead of square bounds\n"
         "  --mc VERSION        26.2|newest|1_21|1_20|1_19|1_18 (default 26.2)\n"
         "  --no-biome-check    include structure attempts without Swamp biome viability\n"
@@ -137,7 +142,8 @@ static void usage(const char *argv0) {
         "  --progress N        print progress every N seeds, 0 = silent (default 100)\n"
         "\n"
         "Output is one lowest-Y hut per seed, sorted by hut_y_approx ascending.\n"
-        "Y is cubiomes mapApproxHeight() at the hut chunk center, not full block-level terrain.\n",
+        "Y is cubiomes mapApproxHeight() at the hut chunk center, not full block-level terrain.\n"
+        "WARNING: --whole-world is exact over the world border, but can scan ~1e10 regions per seed.\n",
         argv0);
 }
 
@@ -218,7 +224,8 @@ int main(int argc, char **argv) {
     const char *in_path = NULL;
     const char *out_path = NULL;
     const char *mc_name = "26.2";
-    int radius = 60000;
+    int radius = DEFAULT_RADIUS_BLOCKS;
+    int whole_world = 0;
     int circle = 0;
     int require_biome = 1;
     int negative_y_only = 0;
@@ -232,12 +239,13 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--in") && i + 1 < argc) in_path = argv[++i];
         else if (!strcmp(argv[i], "--out") && i + 1 < argc) out_path = argv[++i];
-        else if (!strcmp(argv[i], "--radius-blocks") && i + 1 < argc) radius = (int)parse_ll(argv[++i], "radius-blocks");
+        else if (!strcmp(argv[i], "--radius-blocks") && i + 1 < argc) { radius = (int)parse_ll(argv[++i], "radius-blocks"); whole_world = 0; }
         else if (!strcmp(argv[i], "--mc") && i + 1 < argc) mc_name = argv[++i];
         else if (!strcmp(argv[i], "--limit") && i + 1 < argc) limit = (long)parse_ll(argv[++i], "limit");
         else if (!strcmp(argv[i], "--top") && i + 1 < argc) top = (long)parse_ll(argv[++i], "top");
         else if (!strcmp(argv[i], "--progress") && i + 1 < argc) progress = (long)parse_ll(argv[++i], "progress");
         else if (!strcmp(argv[i], "--max-y") && i + 1 < argc) { max_y = (float)parse_double(argv[++i], "max-y"); max_y_enabled = 1; }
+        else if (!strcmp(argv[i], "--whole-world")) { radius = MINECRAFT_WORLD_BORDER_BLOCKS; whole_world = 1; }
         else if (!strcmp(argv[i], "--circle")) circle = 1;
         else if (!strcmp(argv[i], "--no-biome-check")) require_biome = 0;
         else if (!strcmp(argv[i], "--negative-y-only")) negative_y_only = 1;
@@ -251,6 +259,24 @@ int main(int argc, char **argv) {
     }
 
     int mc = parse_mc(mc_name);
+    if (whole_world) {
+        StructureConfig sc;
+        if (getStructureConfig(Swamp_Hut, mc, &sc)) {
+            int region_blocks = sc.regionSize * 16;
+            int reg_min = floor_div_i(-radius, region_blocks) - 1;
+            int reg_max = floor_div_i(radius, region_blocks) + 1;
+            long long axis = (long long)reg_max - (long long)reg_min + 1;
+            fprintf(stderr,
+                "WARNING: --whole-world scans the Minecraft world-border square +/- %d blocks. "
+                "Approximate Swamp_Hut regions per seed: %lld x %lld = %lld. "
+                "This is exact but can be extremely slow.\n",
+                radius, axis, axis, axis * axis);
+        }
+        if (circle) {
+            fprintf(stderr, "WARNING: --circle with --whole-world searches a circle inside the world border, not the full square.\n");
+        }
+    }
+
     FILE *in = fopen(in_path, "r");
     if (!in) { perror(in_path); return 1; }
 
@@ -284,8 +310,10 @@ int main(int argc, char **argv) {
         "radius_blocks,mc_approx,method,note\n");
 
     const char *missing_note = negative_y_only
-        ? "no negative-Y hut found in radius"
-        : (max_y_enabled ? "no hut at or below max-y found in radius" : "no hut found in radius");
+        ? (whole_world ? "no negative-Y hut found in world border" : "no negative-Y hut found in radius")
+        : (max_y_enabled
+            ? (whole_world ? "no hut at or below max-y found in world border" : "no hut at or below max-y found in radius")
+            : (whole_world ? "no hut found in world border" : "no hut found in radius"));
 
     long written = 0;
     for (size_t i = 0; i < results.n; i++) {

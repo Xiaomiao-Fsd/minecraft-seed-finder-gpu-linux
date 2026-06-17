@@ -2,7 +2,7 @@
 
 ## 搜索流程更新
 
-- 新增女巫小屋后处理脚本：读取筛选后的 seed CSV，扫描半径内女巫小屋，按 cubiomes 近似 surface Y 找每个 seed 的最低小屋并排序输出；支持 `--negative-y-only` 只寻找负 Y 小屋，或 `--max-y N` 限制最高 Y。
+- 新增女巫小屋后处理脚本：读取筛选后的 seed CSV，扫描半径内女巫小屋，按 cubiomes 近似 surface Y 找每个 seed 的最低小屋并排序输出；支持 `--whole-world` 按 Minecraft 世界边界完整搜索，支持 `--negative-y-only` 只寻找负 Y 小屋，或 `--max-y N` 限制最高 Y。
 - 默认搜索目标改为：正负 60000 格四联海底神殿 -> 正负 60000 格 `17x17` 窗口最大史莱姆区块数量 -> 正负 10000 格全部主世界生物群系。
 - 新增 CUDA 版四联海底神殿结构搜索，并加入 CUDA biome viability 检查。
 - 新增 CUDA 版精确 `17x17` 史莱姆窗口扫描。
